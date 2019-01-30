@@ -20,6 +20,7 @@ main(int argc, char *argv[]) {
         return -1;
     }
     char buf[512];
+    //首位放入大小
     memset(buf, 0, sizeof(buf));
     FILE *ifp = fopen(argv[1], "rb");
     int size = fread(buf, 1, st.st_size, ifp);
@@ -27,6 +28,7 @@ main(int argc, char *argv[]) {
         fprintf(stderr, "read '%s' error, size is %d.\n", argv[1], size);
         return -1;
     }
+    fprintf(stdout, "check the file for reading '%s', size is %d.\n", argv[1], size);
     fclose(ifp);
     buf[510] = 0x55;
     buf[511] = 0xAA;
@@ -36,6 +38,7 @@ main(int argc, char *argv[]) {
         fprintf(stderr, "write '%s' error, size is %d.\n", argv[2], size);
         return -1;
     }
+    fprintf(stdout, "check the file for writing '%s', size is %d.\n", argv[2], size);
     fclose(ofp);
     printf("build 512 bytes boot sector: '%s' success!\n", argv[2]);
     return 0;
