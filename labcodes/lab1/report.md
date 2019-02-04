@@ -120,7 +120,7 @@ c
 
 ![](reportPic/position1_2_4.png)
 
-![](/home/pan/Code/ucore_os_lab/labcodes/lab1/reportPic/lab1_2_4.png)
+![](reportPic/lab1_2_4.png)
 
 ### 练习3  
 
