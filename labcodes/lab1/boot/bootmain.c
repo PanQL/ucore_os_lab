@@ -96,6 +96,7 @@ bootmain(void) {
     struct proghdr *ph, *eph;
 
     // load each program segment (ignores ph flags)
+    // 载入ELF格式的kernel
     ph = (struct proghdr *)((uintptr_t)ELFHDR + ELFHDR->e_phoff);
     eph = ph + ELFHDR->e_phnum;
     for (; ph < eph; ph ++) {

@@ -27,18 +27,24 @@ start:
     #  address line 20 is tied low, so that addresses higher than
     #  1MB wrap around to zero by default. This code undoes this.
 seta20.1:
+    # 将0x64处的一个字节读入到%al，判断0x2和al与的结果
+    # 等待8042输入缓冲区空闲
     inb $0x64, %al                                  # Wait for not busy(8042 input buffer empty).
     testb $0x2, %al
     jnz seta20.1
 
+    # 8042键盘缓冲端口输出0xd1
     movb $0xd1, %al                                 # 0xd1 -> port 0x64
     outb %al, $0x64                                 # 0xd1 means: write data to 8042's P2 port
 
 seta20.2:
+    # 将0x64处的一个字节读入到%al，判断0x2和al与的结果
+    # 等待8042输入缓冲区空闲
     inb $0x64, %al                                  # Wait for not busy(8042 input buffer empty).
     testb $0x2, %al
     jnz seta20.2
 
+    # 8042键盘缓冲端口输出0xdf
     movb $0xdf, %al                                 # 0xdf -> port 0x60
     outb %al, $0x60                                 # 0xdf = 11011111, means set P2's A20 bit(the 1 bit) to 1
 
@@ -47,7 +53,7 @@ seta20.2:
     # identical to physical addresses, so that the
     # effective memory map does not change during the switch.
     lgdt gdtdesc
-    movl %cr0, %eax
+    movl %cr0, %eax     # 将%cr0最低位置为1
     orl $CR0_PE_ON, %eax
     movl %eax, %cr0
 
