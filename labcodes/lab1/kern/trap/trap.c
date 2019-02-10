@@ -169,6 +169,20 @@ trap_dispatch(struct trapframe *tf) {
     case IRQ_OFFSET + IRQ_KBD:
         c = cons_getc();
         cprintf("kbd [%03d] %c\n", c, c);
+        if(c == 0 && tf->tf_cs == USER_CS){
+			tf->tf_cs = KERNEL_CS;
+			tf->tf_ds = KERNEL_DS;
+			tf->tf_es = KERNEL_DS;
+			tf->tf_eflags &= ~FL_IOPL_MASK;
+        }
+        if(c == 3 && tf->tf_cs == KERNEL_CS){
+			tf->tf_cs = USER_CS;
+			tf->tf_ds = USER_DS;
+			tf->tf_es = USER_DS;
+			tf->tf_ss = USER_DS;
+			tf->tf_eflags |= FL_IOPL_MASK;
+			tf->tf_esp = (uint32_t)tf + sizeof(struct trapframe) - 8;
+        }
         break;
     //LAB1 CHALLENGE 1 : YOUR CODE you should modify below codes.
     case T_SWITCH_TOU:
@@ -187,9 +201,6 @@ trap_dispatch(struct trapframe *tf) {
 			tf->tf_ds = KERNEL_DS;
 			tf->tf_es = KERNEL_DS;
 			tf->tf_eflags &= ~FL_IOPL_MASK;
-			switchu2k = (struct trapframe *)(tf->tf_esp - (sizeof(struct trapframe) - 8));
-			memmove(switchu2k, tf, sizeof(struct trapframe) - 8);
-			*((uint32_t *)tf - 1) = (uint32_t)switchu2k;
 		}
         break;
     case IRQ_OFFSET + IRQ_IDE1:
