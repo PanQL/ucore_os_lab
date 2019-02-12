@@ -232,6 +232,8 @@ page_init(void) {
                 begin = ROUNDUP(begin, PGSIZE);
                 end = ROUNDDOWN(end, PGSIZE);
                 if (begin < end) {
+                    cprintf("  memory: %08x, [%08x,], type = E820_ARM.\n",
+                            (end - begin) / PGSIZE, pa2page(begin));
                     init_memmap(pa2page(begin), (end - begin) / PGSIZE);
                 }
             }
@@ -282,6 +284,7 @@ pmm_init(void) {
     //First we should init a physical memory manager(pmm) based on the framework.
     //Then pmm can alloc/free the physical memory. 
     //Now the first_fit/best_fit/worst_fit/buddy_system pmm are available.
+    //初始化pmm_manager，设定为default_pmm_manager
     init_pmm_manager();
 
     // detect physical memory space, reserve already used memory,
@@ -348,7 +351,7 @@ get_pte(pde_t *pgdir, uintptr_t la, bool create) {
      *   PTE_U           0x004                   // page table/directory entry flags bit : User can access
      */
 #if 0
-    pde_t *pdep = NULL;   // (1) find page directory entry
+    pe_t *pdep = NULL;   // (1) find page directory entry
     if (0) {              // (2) check if entry is not present
                           // (3) check if creating is needed, then alloc page for page table
                           // CAUTION: this page is used for page table, not for common data page
@@ -359,6 +362,21 @@ get_pte(pde_t *pgdir, uintptr_t la, bool create) {
     }
     return NULL;          // (8) return page table entry
 #endif
+	pde_t *pdep = &pgdir[PDX(la)];
+	pte_t *ptep = 0;
+	if(!(*pdep & PTE_P)){
+		if(!create){
+			return NULL;
+		}
+		struct Page *p = alloc_page();
+		ptep = page2kva(p);
+		*pdep = page2pa(p) | PTE_W | PTE_P | PTE_U;
+		memset(page2kva(p), 0, PGSIZE);
+		set_page_ref(p,1);
+	}else{
+		ptep = KADDR(PDE_ADDR(*pdep));
+	}
+	return &ptep[PTX(la)];
 }
 
 //get_page - get related Page struct for linear address la using PDT pgdir
@@ -404,6 +422,15 @@ page_remove_pte(pde_t *pgdir, uintptr_t la, pte_t *ptep) {
                                   //(6) flush tlb
     }
 #endif
+	struct Page *p = pte2page(*ptep);
+	if(*ptep & PTE_P){
+		page_ref_dec(p);
+		*ptep &= ~PTE_P;
+		if(p->ref == 0){
+			free_page(p);
+		}
+		tlb_invalidate(pgdir, la);
+	}
 }
 
 //page_remove - free an Page which is related linear address la and has an validated pte
@@ -475,6 +502,7 @@ check_pgdir(void) {
     assert(page_ref(p1) == 1);
 
     ptep = &((pte_t *)KADDR(PDE_ADDR(boot_pgdir[0])))[1];
+	
     assert(get_pte(boot_pgdir, PGSIZE, 0) == ptep);
 
     p2 = alloc_page();
@@ -603,4 +631,3 @@ print_pgdir(void) {
     }
     cprintf("--------------------- END ---------------------\n");
 }
-
