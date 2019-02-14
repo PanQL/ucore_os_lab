@@ -11,7 +11,7 @@
 
 # start address should be 0:7c00, in real mode, the beginning address of the running bootloader
 .globl start
-start:
+tart:
 .code16                                             # Assemble for 16-bit mode
     cli                                             # Disable interrupts
     cld                                             # String operations increment
