@@ -296,6 +296,7 @@ pmm_init(void) {
     //First we should init a physical memory manager(pmm) based on the framework.
     //Then pmm can alloc/free the physical memory. 
     //Now the first_fit/best_fit/worst_fit/buddy_system pmm are available.
+    //初始化pmm_manager，设定为default_pmm_manager
     init_pmm_manager();
 
     // detect physical memory space, reserve already used memory,
@@ -375,6 +376,21 @@ get_pte(pde_t *pgdir, uintptr_t la, bool create) {
     }
     return NULL;          // (8) return page table entry
 #endif
+	pde_t *pdep = &pgdir[PDX(la)];
+	pte_t *ptep = 0;
+	if(!(*pdep & PTE_P)){
+		if(!create){
+			return NULL;
+		}
+		struct Page *p = alloc_page();
+		ptep = page2kva(p);
+		*pdep = page2pa(p) | PTE_W | PTE_P | PTE_U;
+		memset(page2kva(p), 0, PGSIZE);
+		set_page_ref(p,1);
+	}else{
+		ptep = KADDR(PDE_ADDR(*pdep));
+	}
+	return &ptep[PTX(la)];
 }
 
 //get_page - get related Page struct for linear address la using PDT pgdir
@@ -420,6 +436,15 @@ page_remove_pte(pde_t *pgdir, uintptr_t la, pte_t *ptep) {
                                   //(6) flush tlb
     }
 #endif
+	struct Page *p = pte2page(*ptep);
+	if(*ptep & PTE_P){
+		page_ref_dec(p);
+		*ptep &= ~PTE_P;
+		if(p->ref == 0){
+			free_page(p);
+		}
+		tlb_invalidate(pgdir, la);
+	}
 }
 
 //page_remove - free an Page which is related linear address la and has an validated pte

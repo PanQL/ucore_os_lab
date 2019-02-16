@@ -54,11 +54,6 @@ _fifo_map_swappable(struct mm_struct *mm, uintptr_t addr, struct Page *page, int
     //(1)link the most recent arrival page at the back of the pra_list_head qeueue.
 	list_add_before(head,entry);
 	
-	list_entry_t *le = list_next(head);
-	while(le != head){
-		cprintf("set up swap : the page addr is %08x \n", le2page(le, pra_page_link)->pra_vaddr);
-		le = list_next(le);
-	}
     return 0;
 }
 /*
@@ -80,7 +75,7 @@ _fifo_swap_out_victim(struct mm_struct *mm, struct Page ** ptr_page, int in_tick
 	 assert(ptr_page != NULL);
 	 *ptr_page = le2page(le, pra_page_link);
 	 list_del(le);
-	 cprintf("the victim address is %08x\n", (*ptr_page)->pra_vaddr);
+	 //cprintf("the victim address is %08x\n", (*ptr_page)->pra_vaddr);
      return 0;
 }
 
