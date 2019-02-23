@@ -13,6 +13,7 @@ sem_init(semaphore_t *sem, int value) {
     wait_queue_init(&(sem->wait_queue));
 }
 
+/*释放sem，唤醒等待队列中的第一个沉睡进程（如果队列不为空）*/
 static __noinline void __up(semaphore_t *sem, uint32_t wait_state) {
     bool intr_flag;
     local_intr_save(intr_flag);
@@ -29,22 +30,23 @@ static __noinline void __up(semaphore_t *sem, uint32_t wait_state) {
     local_intr_restore(intr_flag);
 }
 
+/*尝试获取sem值的控制权，如果现在无法获取，则当前进程进入等待队列。*/
 static __noinline uint32_t __down(semaphore_t *sem, uint32_t wait_state) {
     bool intr_flag;
     local_intr_save(intr_flag);
-    if (sem->value > 0) {
+    if (sem->value > 0) {	/*当前资源可得，使能中断后返回*/
         sem->value --;
         local_intr_restore(intr_flag);
         return 0;
     }
     wait_t __wait, *wait = &__wait;
-    wait_current_set(&(sem->wait_queue), wait, wait_state);
-    local_intr_restore(intr_flag);
+    wait_current_set(&(sem->wait_queue), wait, wait_state);	/*当前进程进入等待队列*/
+    local_intr_restore(intr_flag);	/*使能中断*/
 
-    schedule();
+    schedule();	/*调度另外的进程，当前进程沉睡*/
 
-    local_intr_save(intr_flag);
-    wait_current_del(&(sem->wait_queue), wait);
+    local_intr_save(intr_flag);	/*如果当前进程之后某时被唤醒，从这里开始执行*/
+    wait_current_del(&(sem->wait_queue), wait);	/*将当前队列从等待队列中删除。*/
     local_intr_restore(intr_flag);
 
     if (wait->wakeup_flags != wait_state) {

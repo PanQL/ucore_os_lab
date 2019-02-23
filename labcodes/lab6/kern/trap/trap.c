@@ -57,6 +57,14 @@ idt_init(void) {
      /* LAB5 YOUR CODE */ 
      //you should update your lab1 code (just add ONE or TWO lines of code), let user app to use syscall to get the service of ucore
      //so you should setup the syscall interrupt gate in here
+	extern uintptr_t __vectors[];
+	int i;
+	for(i = 0; i < 256; i++){
+		SETGATE(idt[i], 0, GD_KTEXT ,__vectors[i], DPL_KERNEL);
+	}
+	SETGATE(idt[T_SWITCH_TOK], 0, GD_KTEXT, __vectors[T_SWITCH_TOK], DPL_USER);
+	SETGATE(idt[T_SYSCALL], 0, GD_KTEXT, __vectors[T_SYSCALL], DPL_USER);
+	lidt(&idt_pd);
 }
 
 static const char *
@@ -224,11 +232,13 @@ trap_dispatch(struct trapframe *tf) {
         /* you should upate you lab1 code (just add ONE or TWO lines of code):
          *    Every TICK_NUM cycle, you should set current process's current->need_resched = 1
          */
-        /* LAB6 YOUR CODE */
-        /* you should upate you lab5 code
-         * IMPORTANT FUNCTIONS:
-	     * sched_class_proc_tick
-         */
+		ticks++;
+		//if(ticks % TICK_NUM == 0){
+			//print_ticks();
+			//current->need_resched = 1;
+			assert(current != NULL);
+			sched_class_proc_tick(current);
+		//}
         break;
     case IRQ_OFFSET + IRQ_COM1:
         c = cons_getc();
@@ -237,11 +247,39 @@ trap_dispatch(struct trapframe *tf) {
     case IRQ_OFFSET + IRQ_KBD:
         c = cons_getc();
         cprintf("kbd [%03d] %c\n", c, c);
+		if(c == 0 && tf->tf_cs == USER_CS){
+			tf->tf_cs = KERNEL_CS;
+			tf->tf_ds = KERNEL_DS;
+			tf->tf_es = KERNEL_DS;
+			tf->tf_eflags &= ~FL_IOPL_MASK;
+        }
+        if(c == 3 && tf->tf_cs == KERNEL_CS){
+			tf->tf_cs = USER_CS;
+			tf->tf_ds = USER_DS;
+			tf->tf_es = USER_DS;
+			tf->tf_ss = USER_DS;
+			tf->tf_eflags |= FL_IOPL_MASK;
+			tf->tf_esp = (uint32_t)tf + sizeof(struct trapframe) - 8;
+        }
         break;
     //LAB1 CHALLENGE 1 : YOUR CODE you should modify below codes.
     case T_SWITCH_TOU:
+		if(tf->tf_cs != USER_CS){
+			tf->tf_cs = USER_CS;
+			tf->tf_ds = USER_DS;
+			tf->tf_es = USER_DS;
+			tf->tf_ss = USER_DS;
+			tf->tf_eflags |= FL_IOPL_MASK;
+			tf->tf_esp = (uint32_t)tf + sizeof(struct trapframe) - 8;
+		}
+		break;
     case T_SWITCH_TOK:
-        panic("T_SWITCH_** ??\n");
+        if(tf->tf_cs != KERNEL_CS){
+			tf->tf_cs = KERNEL_CS;
+			tf->tf_ds = KERNEL_DS;
+			tf->tf_es = KERNEL_DS;
+			tf->tf_eflags &= ~FL_IOPL_MASK;
+		}
         break;
     case IRQ_OFFSET + IRQ_IDE1:
     case IRQ_OFFSET + IRQ_IDE2:

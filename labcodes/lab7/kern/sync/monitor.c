@@ -24,7 +24,7 @@ monitor_init (monitor_t * mtp, size_t num_cv) {
 
 // Unlock one of threads waiting on the condition variable. 
 void 
-cond_signal (condvar_t *cvp) {
+cond_signal (condvar_t *cvp) {	/*指出现在条件变量cvp为真*/
    //LAB7 EXERCISE1: YOUR CODE
    cprintf("cond_signal begin: cvp %x, cvp->count %d, cvp->owner->next_count %d\n", cvp, cvp->count, cvp->owner->next_count);  
   /*
@@ -37,6 +37,12 @@ cond_signal (condvar_t *cvp) {
    *          }
    *       }
    */
+   if(cvp->count > 0){	/*如果有等待该条件变量的进程，唤醒其中的第一个*/
+		cvp->owner->next_count ++;	//当前进程要进入等待状态，先把等待管程的进程数量加一
+		up(&(cvp->sem));	//唤醒该条件变量的第一个等待进程(如果存在的话)
+		down(&(cvp->owner->next));	//下次切换回来时，如果没有别的进程正在等待使用管程，则获取管程的控制权
+		cvp->owner->next_count --;
+   }
    cprintf("cond_signal end: cvp %x, cvp->count %d, cvp->owner->next_count %d\n", cvp, cvp->count, cvp->owner->next_count);
 }
 
@@ -55,5 +61,13 @@ cond_wait (condvar_t *cvp) {
     *         wait(cv.sem);
     *         cv.count --;
     */
+	cvp->count ++;
+	if(cvp->owner->next_count > 0){		//如果有别的线程正等着要使用管程，让出管程
+		up(&(cvp->owner->next));
+	}else{
+		up(&(cvp->owner->mutex));
+	}
+	down(&(cvp->sem));
+	cvp->count --;
     cprintf("cond_wait end:  cvp %x, cvp->count %d, cvp->owner->next_count %d\n", cvp, cvp->count, cvp->owner->next_count);
 }

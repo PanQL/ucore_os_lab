@@ -140,7 +140,7 @@ get_pid(void) {
     struct proc_struct *proc;
     list_entry_t *list = &proc_list, *le;
     static int next_safe = MAX_PID, last_pid = MAX_PID;
-    if (++ last_pid >= MAX_PID) {
+    if (++ last_pid >= MAX_PID) {	// judge if the MAX_PID is not 0xFFFFFFFF, then last_pid is 1
         last_pid = 1;
         goto inside;
     }
@@ -149,7 +149,7 @@ get_pid(void) {
         next_safe = MAX_PID;
     repeat:
         le = list;
-        while ((le = list_next(le)) != list) {
+        while ((le = list_next(le)) != list) {	//for each proc in the proc_list
             proc = le2proc(le, list_link);
             if (proc->pid == last_pid) {
                 if (++ last_pid >= next_safe) {
