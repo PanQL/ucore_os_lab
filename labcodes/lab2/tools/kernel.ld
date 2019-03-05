@@ -7,6 +7,7 @@ ENTRY(kern_entry)
 
 SECTIONS {
     /* Load the kernel at this address: "." means the current address */
+	/*将内核加载到0xC0100000这个地址*/
     . = 0xC0100000;
 
     .text : {

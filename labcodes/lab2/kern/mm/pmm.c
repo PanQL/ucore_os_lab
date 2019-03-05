@@ -218,6 +218,8 @@ page_init(void) {
     }
 
     uintptr_t freemem = PADDR((uintptr_t)pages + sizeof(struct Page) * npage);
+	//cprintf("the pages is %08x , npage is %08x , freemem is %08x\n", pages, npage, freemem);
+
 
     for (i = 0; i < memmap->nr_map; i ++) {
         uint64_t begin = memmap->map[i].addr, end = begin + memmap->map[i].size;
@@ -232,8 +234,8 @@ page_init(void) {
                 begin = ROUNDUP(begin, PGSIZE);
                 end = ROUNDDOWN(end, PGSIZE);
                 if (begin < end) {
-                    cprintf("  memory: %08x, [%08x,], type = E820_ARM.\n",
-                            (end - begin) / PGSIZE, pa2page(begin));
+                    //cprintf("  memory: %08x, [%08x,], type = E820_ARM.\n",
+                      //      (end - begin) / PGSIZE, pa2page(begin));
                     init_memmap(pa2page(begin), (end - begin) / PGSIZE);
                 }
             }

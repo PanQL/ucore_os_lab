@@ -27,7 +27,10 @@ sched_class_dequeue(struct proc_struct *proc) {
 
 static inline struct proc_struct *
 sched_class_pick_next(void) {
-    return sched_class->pick_next(rq);
+	struct proc_struct *p = sched_class->pick_next(rq);
+	cprintf("the new proc to run is %d , with stride %d \n", p->pid, p->lab6_stride);
+	return p;
+    //return sched_class->pick_next(rq);
 }
 
 void
