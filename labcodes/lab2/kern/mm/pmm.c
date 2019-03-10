@@ -189,10 +189,10 @@ nr_free_pages(void) {
 /* pmm_init - initialize the physical memory management */
 static void
 page_init(void) {
-    struct e820map *memmap = (struct e820map *)(0x8000 + KERNBASE);
-    uint64_t maxpa = 0;
+    struct e820map *memmap = (struct e820map *)(0x8000 + KERNBASE);     //去的探测虚拟内存时得到的结果的虚拟地址
+    uint64_t maxpa = 0;     // 最大的物理内存范围的物理地址
 
-    cprintf("e820map:\n");
+    cprintf("e820map:\n");  //打印探测物理内存的结果
     int i;
     for (i = 0; i < memmap->nr_map; i ++) {
         uint64_t begin = memmap->map[i].addr, end = begin + memmap->map[i].size;
@@ -204,36 +204,38 @@ page_init(void) {
             }
         }
     }
-    if (maxpa > KMEMSIZE) {
+    if (maxpa > KMEMSIZE) {     //设定最大物理地址不超过0x38000000 ???
         maxpa = KMEMSIZE;
     }
 
-    extern char end[];
+    extern char end[];  //来自tools/kernel.ld链接过程中确定的内核在内存上占据的最大的物理地址。
 
-    npage = maxpa / PGSIZE;
-    pages = (struct Page *)ROUNDUP((void *)end, PGSIZE);
+    npage = maxpa / PGSIZE;     //内核需要占据的最大的页数
+    pages = (struct Page *)ROUNDUP((void *)end, PGSIZE);    //内核的起始虚拟地址
 
-    for (i = 0; i < npage; i ++) {
+    for (i = 0; i < npage; i ++) {  //为内核保留的页，不能用于分配，做上标记
         SetPageReserved(pages + i);
     }
 
-    uintptr_t freemem = PADDR((uintptr_t)pages + sizeof(struct Page) * npage);
+    //注意这里拿到的是物理内存
+    uintptr_t freemem = PADDR((uintptr_t)pages + sizeof(struct Page) * npage);  //分配完毕之后，虚拟地址更高的页就是可以用于分配了。
 
     for (i = 0; i < memmap->nr_map; i ++) {
         uint64_t begin = memmap->map[i].addr, end = begin + memmap->map[i].size;
-        if (memmap->map[i].type == E820_ARM) {
-            if (begin < freemem) {
+        if (memmap->map[i].type == E820_ARM) {  //对于每一块探测到的物理内存
+            if (begin < freemem) {  //不能侵占内核需要的空间
                 begin = freemem;
             }
-            if (end > KMEMSIZE) {
+            if (end > KMEMSIZE) {   //超过0x38000000的物理地址也压缩到0x38000000
                 end = KMEMSIZE;
             }
-            if (begin < end) {
+            if (begin < end) {  //如果满足上面两个判断，则是可用于分配的内存,将其初始化，留待分配
                 begin = ROUNDUP(begin, PGSIZE);
                 end = ROUNDDOWN(end, PGSIZE);
                 if (begin < end) {
-                    cprintf("  memory: %08x, [%08x,], type = E820_ARM.\n",
-                            (end - begin) / PGSIZE, pa2page(begin));
+                    cprintf(" begin: %08x , PPN(begin) : %08x , pages = %08x \n",
+                            begin , PPN(begin), pa2page(begin));
+                    // 不妨在这里打印一下begin以及调用pa2page之后的地址，以此确定一下此处传入的是否是虚拟地址
                     init_memmap(pa2page(begin), (end - begin) / PGSIZE);
                 }
             }

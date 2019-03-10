@@ -186,12 +186,9 @@ default_free_pages(struct Page *base, size_t n) {
             list_add_before(&(p->page_link),&(base->page_link));
             break;
         }else if (p + p->property == base) {
-            if(le == &free_list){
-                p->property += base->property;
-                ClearPageProperty(base);
-            }else{
-                p->property += base->property;
-                ClearPageProperty(base);
+            p->property += base->property;
+            ClearPageProperty(base);
+            if(le != &free_list ){
                 np = le2page(le, page_link);
                 if(base + base->property == np){
                     p->property += np->property;
