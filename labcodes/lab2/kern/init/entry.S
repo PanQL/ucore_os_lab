@@ -24,8 +24,9 @@ kern_entry:
 next:
 
     # unmap va 0 ~ 4M, it's temporary mapping
-    xorl %eax, %eax
-    movl %eax, __boot_pgdir
+	# here panpan add comments
+	# xorl %eax, %eax
+	# movl %eax, __boot_pgdir
 
     # set ebp, esp
     movl $0x0, %ebp

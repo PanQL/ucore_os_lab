@@ -328,11 +328,17 @@ quick_check 'check pmm'                                         \
     'check_boot_pgdir() succeeded!'
 
 pts=20
+#quick_check 'check page table'                                  \
+    #'PDE(0e0) c0000000-f8000000 38000000 urw'                   \
+    #'  |-- PTE(38000) c0000000-f8000000 38000000 -rw'           \
+    #'PDE(001) fac00000-fb000000 00400000 -rw'                   \
+    #'  |-- PTE(000e0) faf00000-fafe0000 000e0000 urw'           \
+    #'  |-- PTE(00001) fafeb000-fafec000 00001000 -rw'
 quick_check 'check page table'                                  \
-    'PDE(0e0) c0000000-f8000000 38000000 urw'                   \
-    '  |-- PTE(38000) c0000000-f8000000 38000000 -rw'           \
+    'PDE(002) 00000000-00800000 00800000 urw'                   \
+    '  |-- PTE(00800) 00000000-00800000 00800000 -rw'           \
     'PDE(001) fac00000-fb000000 00400000 -rw'                   \
-    '  |-- PTE(000e0) faf00000-fafe0000 000e0000 urw'           \
+	'  |-- PTE(00002) fac00000-fac02000 00002000 urw'           \
     '  |-- PTE(00001) fafeb000-fafec000 00001000 -rw'
 
 pts=10
